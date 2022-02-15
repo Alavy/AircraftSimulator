@@ -12,21 +12,21 @@ namespace Algine.Aircraft.UI
         public RectTransform background;
         public RectTransform handle;
 
-        float bgXpos = 0;
+        float m_bgXpos = 0;
         void Start()
         {
-            bgXpos = RectTransformUtility.WorldToScreenPoint(
+            m_bgXpos = RectTransformUtility.WorldToScreenPoint(
                 new Camera(), background.position).x;
             handle.anchoredPosition = new Vector2(0.0f, 0.0f);
-            InputManager.rudderInput = 0.0f;
+            InputManager.RudderMove(0.0f);
         }
 
         public virtual void OnDrag(PointerEventData eventData)
         {
-            float x = Mathf.Clamp((eventData.position).x - bgXpos,
+            float x = Mathf.Clamp((eventData.position).x - m_bgXpos,
                  -background.sizeDelta.x / 2, background.sizeDelta.x/2);
 
-            InputManager.rudderInput = x / background.sizeDelta.x;
+            InputManager.RudderMove(x / background.sizeDelta.x);
             handle.anchoredPosition = new Vector2(x,0.0f);
         }
 
@@ -37,7 +37,7 @@ namespace Algine.Aircraft.UI
 
         public void OnPointerUp(PointerEventData eventData)
         {
-            InputManager.rudderInput = 0.0f;
+            InputManager.RudderMove(0.0f);
             handle.anchoredPosition = new Vector2(0.0f, 0.0f);
         }
     }

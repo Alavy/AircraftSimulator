@@ -3,51 +3,28 @@ using UnityEngine.EventSystems;
 
 namespace Algine.Aircraft.UI
 {
-    public class TouchField : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+    public class TouchField : MonoBehaviour, IPointerDownHandler, IPointerUpHandler,IDragHandler
     {
-        [HideInInspector]
-        public static Vector2 TouchDist;
-        [HideInInspector]
-        public Vector2 PointerOld;
-        [HideInInspector]
-        protected int PointerId;
-        [HideInInspector]
-        public bool Pressed;
+        [SerializeField]
+        private float moveRange=50f;
+        private Vector2 PointerOld;
 
-        void Update()
+        public virtual void OnPointerDown(PointerEventData eventData)
         {
-            if (Pressed)
-            {
-                if (PointerId >= 0 && PointerId < Input.touches.Length)
-                {
-                    TouchDist = Input.touches[PointerId].position - PointerOld;
-                    PointerOld = Input.touches[PointerId].position;
-                }
-                else
-                {
-                    TouchDist = new Vector2(Input.mousePosition.x, Input.mousePosition.y) - PointerOld;
-                    PointerOld = Input.mousePosition;
-                }
-            }
-            else
-            {
-                TouchDist = new Vector2();
-            }
-
-            InputManager.touchPanelLook = TouchDist;
-           
-        }
-
-        public void OnPointerDown(PointerEventData eventData)
-        {
-            Pressed = true;
-            PointerId = eventData.pointerId;
             PointerOld = eventData.position;
         }
-        
-        public void OnPointerUp(PointerEventData eventData)
+
+        public virtual void OnPointerUp(PointerEventData eventData)
         {
-            Pressed = false;
+            //InputManager.touchPanelLook = Vector2.zero;
+        }
+
+        public virtual void OnDrag(PointerEventData eventData)
+        {
+            InputManager.TouchLook(Vector2.ClampMagnitude( eventData.position 
+                - PointerOld,moveRange)/moveRange);
+
+            PointerOld = eventData.position;
         }
     }
 }

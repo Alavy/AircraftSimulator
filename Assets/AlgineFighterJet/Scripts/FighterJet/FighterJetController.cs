@@ -26,6 +26,11 @@ namespace Algine.FighterJet
 
         private bool m_isCloseToGround=true;
         private bool m_isCloseToMaxiMumCeling = false;
+
+        private Vector2 m_sideStickVec = Vector2.zero;
+        private float m_throttleVal = 0.0f;
+        private float m_rudderVal = 0.0f;
+
         #endregion
 
         #region JetEngine
@@ -123,6 +128,10 @@ namespace Algine.FighterJet
             m_animaor = GetComponent<Animator>();
             m_aircraft = GetComponent<FighterJet>();
 
+            InputManager.OnRudderMove += OnRudderMove;
+            InputManager.OnSideStickMove += OnSideStickMove;
+            InputManager.OnThrottleMove += OnThrottleMove;
+
             if(m_engine_1 ==null || m_engine_2 == null)
             {
                 Debug.LogError("Engine has no particle syatem man");
@@ -162,6 +171,18 @@ namespace Algine.FighterJet
             }
 
             GameEvents.Current.onOffsetChanged += OnOffsetChanged;
+        }
+        private void OnSideStickMove(Vector2 dir)
+        {
+            m_sideStickVec = dir;
+        }
+        private void OnRudderMove(float val)
+        {
+            m_rudderVal = val;
+        }
+        private void OnThrottleMove(float val)
+        {
+            m_throttleVal = val;
         }
         public void StarMissile()
         {
@@ -225,27 +246,27 @@ namespace Algine.FighterJet
         {
             //passing value to the animation state Machine 
             m_animaor.SetFloat(horizontal,
-                InputManager.joystickInputVector.x);
+                m_sideStickVec.x);
             m_animaor.SetFloat(vertical,
-                InputManager.joystickInputVector.y);
+                m_sideStickVec.y);
             m_animaor.SetFloat(paddle,
-                InputManager.rudderInput);
+                m_rudderVal);
 
             //handle Animation through code
-            if (InputManager.throttleInput > 0)
+            if (m_throttleVal > 0)
             {
                 m_throttle_stick.transform.localRotation = Quaternion.Euler(
-                    InputManager.throttleInput *
+                    m_throttleVal *
                 -50, 0, 0);
             }
             m_joy_stick.transform.localRotation = Quaternion.Euler(
-                    InputManager.joystickInputVector.y * -20, 0,
-                InputManager.joystickInputVector.x * 20);
+                    m_sideStickVec.y * -20, 0,
+                m_sideStickVec.x * 20);
             
         }
         private void handleAircraftPower()
         {
-            float thottleInput = InputManager.throttleInput;
+            float thottleInput = m_throttleVal;
             double altitude = getAbsolutePosition().Item2;
 
             if ( altitude < m_checkDistance)
@@ -265,8 +286,7 @@ namespace Algine.FighterJet
             if (thottleInput >= m_minimumTakeOffPower
                 && !m_isEngineStarted)
             {
-                InputManager.throttleInputMinimum
-                    = m_minimumPower;
+                InputManager.SetMinPOwer(m_minimumPower);
                 //start engine
                 StartCoroutine(startEngine());
             }
@@ -323,10 +343,10 @@ namespace Algine.FighterJet
                 m_audioSource.volume = Mathf.Clamp(thottleInput,.3f,1);
 
                 //Engine 1
-                m_engine_1_burst.startSpeed = Mathf.Clamp(InputManager.throttleInput, .5f, 1)
+                m_engine_1_burst.startSpeed = Mathf.Clamp(m_throttleVal, .5f, 1)
                     * m_EngineSpeed;
                 //Engine 2
-                m_engine_2_burst.startSpeed = Mathf.Clamp(InputManager.throttleInput, .5f, 1)
+                m_engine_2_burst.startSpeed = Mathf.Clamp(m_throttleVal, .5f, 1)
                     * m_EngineSpeed;
 
 
@@ -343,7 +363,7 @@ namespace Algine.FighterJet
         }
         public void brake(bool brake)
         {
-            if (InputManager.throttleInput <= m_minimumTakeOffPower)
+            if (m_throttleVal <= m_minimumTakeOffPower)
             {
                 m_brake = brake;
             }
@@ -396,12 +416,12 @@ namespace Algine.FighterJet
             m_audioSource.Play();
 
             //Engine 1
-            m_engine_1_burst.startSpeed = Mathf.Clamp(InputManager.throttleInput, .5f, 1)
+            m_engine_1_burst.startSpeed = Mathf.Clamp(m_throttleVal, .5f, 1)
                 * m_EngineSpeed;
 
 
             //Engine 2
-            m_engine_2_burst.startSpeed = Mathf.Clamp(InputManager.throttleInput, .5f, 1)
+            m_engine_2_burst.startSpeed = Mathf.Clamp(m_throttleVal, .5f, 1)
                 * m_EngineSpeed;
 
             //Engine Start
@@ -411,7 +431,7 @@ namespace Algine.FighterJet
             yield return new WaitForSeconds(m_startEngineTime/2);
 
             //run
-            float thottleInput = InputManager.throttleInput;
+            float thottleInput = m_throttleVal;
             m_aircraft.m_thrustForce
                     = (m_aircraft.m_Max_thrustForce * thottleInput);
             m_aircraft.m_dragForce
@@ -435,11 +455,11 @@ namespace Algine.FighterJet
         {
             if (!m_isAircraftStoped)
             {
-                if (InputManager.rudderInput != 0)
+                if (m_rudderVal != 0)
                 {
-                    float yawDelata = InputManager.rudderInput
+                    float yawDelata = m_rudderVal
                     * sensitivityForAicraft.z 
-                    * InputManager.throttleInput;
+                    * m_throttleVal;
                     //Debug.Log(InputManager.rudderInput);
                     _yawValue = Mathf.Lerp(yawDelata, _yawValue,
                      Time.deltaTime);
@@ -449,9 +469,9 @@ namespace Algine.FighterJet
                 }
 
                 //checking SideStick input are zero
-                if (InputManager.joystickInputVector.x == 0
+                if (m_sideStickVec.x == 0
                     &&
-                    InputManager.joystickInputVector.y == 0)
+                    m_sideStickVec.y == 0)
                 {
                     _smoothMouseForAircraft = Vector2.zero;
 
@@ -470,9 +490,9 @@ namespace Algine.FighterJet
                     m_default_zAnim.reset();
 
                     Vector2 mouseDelta = new Vector2(
-                           InputManager.joystickInputVector.x * InputManager.throttleInput 
+                           m_sideStickVec.x * m_throttleVal 
                            * sensitivityForAicraft.x,
-                           InputManager.joystickInputVector.y * InputManager.throttleInput
+                           m_sideStickVec.y * m_throttleVal
                            * sensitivityForAicraft.y);
 
                     _smoothMouseForAircraft = Vector2.Lerp(_smoothMouseForAircraft,

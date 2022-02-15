@@ -31,6 +31,29 @@ namespace Algine.FighterJet
                 Debug.LogError("camera missing");
             }
             m_localPos = transform.localPosition;
+            InputManager.OnTouchLook += onTouchLook;
+        }
+        private void OnEnable()
+        {
+            InputManager.OnTouchLook += onTouchLook;
+
+        }
+        private void OnDisable()
+        {
+            InputManager.OnTouchLook -= onTouchLook;
+
+        }
+        private void onTouchLook(Vector2 dir)
+        {
+            Vector2 mouseDeltaForCamera = new Vector2(
+                   dir.x
+                   * sensitivityFoCamera.x,
+                   dir.y
+                   * sensitivityFoCamera.y);
+
+            _mouseAbsoluteForCamera += mouseDeltaForCamera;
+            _mouseAbsoluteForCamera.x %= 360.0f;
+            _mouseAbsoluteForCamera.y %= 360.0f;
         }
         private void Update()
         {
@@ -40,21 +63,6 @@ namespace Algine.FighterJet
         {
             if (!m_isCamera_outside)
             {
-                Vector2 mouseDeltaForCamera = new Vector2(
-                    InputManager.touchPanelLook.x
-                    * sensitivityFoCamera.x,
-                    InputManager.touchPanelLook.y
-                    * sensitivityFoCamera.y);
-
-                _smoothMouseForCamera = Vector3.Lerp(_smoothMouseForCamera,
-                    mouseDeltaForCamera, Time.deltaTime *
-                    cameraRotBias);
-
-                _mouseAbsoluteForCamera += _smoothMouseForCamera;
-
-                _mouseAbsoluteForCamera.x %= 360;
-                _mouseAbsoluteForCamera.y %= 360;
-
                 transform.position = m_camera_holder_inside.position;
 
                 m_camera_holder_inside.localRotation =
@@ -63,22 +71,6 @@ namespace Algine.FighterJet
             }
             else
             {
-                Vector2 mouseDeltaForCamera = new Vector2(
-                   InputManager.touchPanelLook.x
-                   * sensitivityFoCamera.x,
-                   InputManager.touchPanelLook.y
-                   * sensitivityFoCamera.y);
-
-                _smoothMouseForCamera = Vector3.Lerp(_smoothMouseForCamera,
-                    mouseDeltaForCamera, Time.deltaTime *
-                    cameraRotBias);
-
-                _mouseAbsoluteForCamera += _smoothMouseForCamera;
-
-                _mouseAbsoluteForCamera.x %= 360;
-                _mouseAbsoluteForCamera.y %= 360;
-                 
-
                 m_camera_holder_outside.localRotation =
                 Quaternion.Euler(-_mouseAbsoluteForCamera.y < -18f ? -18f :
                 -_mouseAbsoluteForCamera.y,

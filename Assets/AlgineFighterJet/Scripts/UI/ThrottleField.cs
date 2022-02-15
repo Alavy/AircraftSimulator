@@ -10,30 +10,33 @@ namespace Algine.Aircraft.UI
         [Header("Components")]
         public RectTransform background;
         public RectTransform handle;
+        [SerializeField]
+        private float minStartReq = 0.0f;
+        [SerializeField]
+        private float minInputReq = 0.0f;
 
-        public float MinimumRequired = 0.0f;
-
-        float bgYpos = 0;
+        private float m_bgYpos = 0;
         void Start()
         {
-            MinimumRequired = InputManager.throttleInputMinimum;
-            bgYpos = RectTransformUtility.WorldToScreenPoint(
+            m_bgYpos = RectTransformUtility.WorldToScreenPoint(
                 new Camera(), background.position).y;
             handle.anchoredPosition = new Vector2(0.0f,
-                MinimumRequired* 
+                minStartReq * 
                 background.sizeDelta.y);
-            InputManager.throttleInput = 0.0f;
+            InputManager.ThrottleMove(0.0f);
+            InputManager.OnSetMinPOwer += OnSetMinPower;
         }
-
+        private void OnSetMinPower(float val)
+        {
+            minInputReq = val;
+        }
         public virtual void OnDrag(PointerEventData eventData)
         {
-            MinimumRequired = InputManager.throttleInputMinimum;
-
-            float y = Mathf.Clamp(eventData.position.y - bgYpos,
-                MinimumRequired
+            float y = Mathf.Clamp(eventData.position.y - m_bgYpos,
+                minInputReq
                 * background.sizeDelta.y, background.sizeDelta.y);
 
-            InputManager.throttleInput = y / background.sizeDelta.y;
+            InputManager.ThrottleMove( y / background.sizeDelta.y);
 
             handle.anchoredPosition = new Vector2(0.0f,y);
         }

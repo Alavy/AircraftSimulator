@@ -25,6 +25,10 @@ namespace Algine.GeneraPropellerAircraft
 
         private bool m_isCloseToGround = true;
         private bool m_isCloseToMaxiMumCeling = false;
+
+        private Vector2 m_sideStickVec = Vector2.zero;
+        private float m_throttleVal = 0.0f;
+        private float m_rudderVal = 0.0f;
         #endregion
 
         #region Prop_Engine
@@ -100,6 +104,9 @@ namespace Algine.GeneraPropellerAircraft
             m_animaor = GetComponent<Animator>();
             m_aircraft = GetComponent<PropellerAircraft>();
 
+            InputManager.OnRudderMove += OnRudderMove;
+            InputManager.OnSideStickMove += OnSideStickMove;
+            InputManager.OnThrottleMove += OnThrottleMove;
 
             if (m_low_speed_propellers == null ||
                 m_high_speed_propellers == null ||
@@ -151,6 +158,18 @@ namespace Algine.GeneraPropellerAircraft
                 AircraftPositionOffsetZ + transform.position.z
                );
         }
+        private void OnSideStickMove(Vector2 dir)
+        {
+            m_sideStickVec = dir;
+        }
+        private void OnRudderMove(float val)
+        {
+            m_rudderVal = val;
+        }
+        private void OnThrottleMove(float val)
+        {
+            m_throttleVal = val;
+        }
         private void Update()
         {
             handleAnimation();
@@ -163,15 +182,15 @@ namespace Algine.GeneraPropellerAircraft
         {
             //passing value to the animation state Machine 
             m_animaor.SetFloat(horizontal,
-                InputManager.joystickInputVector.x);
+                m_sideStickVec.x);
             m_animaor.SetFloat(vertical,
-                InputManager.joystickInputVector.y);
+                m_sideStickVec.y);
             m_animaor.SetFloat(paddle,
-                InputManager.rudderInput);
+                m_rudderVal);
         }
         private void handleAircraftPower()
         {
-            float thottleInput = InputManager.throttleInput;
+            float thottleInput = m_throttleVal;
             double altitude = getAbsolutePosition().Item2;
 
             if (altitude < m_checkDistance)
@@ -191,8 +210,7 @@ namespace Algine.GeneraPropellerAircraft
             if (thottleInput >= m_minimumTakeOffPower
                 && !m_isEngineStarted)
             {
-                InputManager.throttleInputMinimum 
-                    = m_minimumPower;
+                InputManager.SetMinPOwer(m_minimumPower);
 
                 StartCoroutine(startEngine());
             }
@@ -303,7 +321,7 @@ namespace Algine.GeneraPropellerAircraft
         }
         public void brake(bool brake)
         {
-            if(InputManager.throttleInput <= m_minimumTakeOffPower)
+            if(m_throttleVal <= m_minimumTakeOffPower)
             {
                 m_brake = brake;
             }
@@ -317,7 +335,7 @@ namespace Algine.GeneraPropellerAircraft
         {
             m_isEngineStarted = true;
             m_audioSource.Stop();
-            m_audioSource.volume = InputManager.throttleInput;
+            m_audioSource.volume = m_throttleVal;
             m_audioSource.clip = m_engineStartSound;
             m_audioSource.Play();
 
@@ -334,7 +352,7 @@ namespace Algine.GeneraPropellerAircraft
 
             yield return new WaitForSeconds(m_startEngineTime / 2);
             //run
-            float thottleInput = InputManager.throttleInput;
+            float thottleInput = m_throttleVal;
 
             m_aircraft.m_thrustForce
                     = (m_aircraft.m_Max_thrustForce * thottleInput);
@@ -354,11 +372,11 @@ namespace Algine.GeneraPropellerAircraft
         {
             if(!m_isAircraftStoped)
             {
-                if (InputManager.rudderInput != 0)
+                if (m_rudderVal != 0)
                 {
-                    float yawDelata = InputManager.rudderInput
+                    float yawDelata = m_rudderVal
                     * sensitivityForAicraft.z 
-                    * InputManager.throttleInput;
+                    * m_throttleVal;
                     _yawValue = Mathf.Lerp(yawDelata, _yawValue,
                                 Time.deltaTime);
 
@@ -367,9 +385,9 @@ namespace Algine.GeneraPropellerAircraft
 
                 }
                 //checking SideStick input are zero
-                if (InputManager.joystickInputVector.x == 0
+                if (m_sideStickVec.x == 0
                     &&
-                    InputManager.joystickInputVector.y == 0)
+                    m_sideStickVec.y == 0)
                 {
                     _smoothMouseForAircraft = Vector2.zero;
 
@@ -389,9 +407,9 @@ namespace Algine.GeneraPropellerAircraft
                     m_default_zAnim.reset();
 
                     Vector2 mouseDelta = new Vector2(
-                            InputManager.joystickInputVector.x * InputManager.throttleInput
+                            m_sideStickVec.x * m_throttleVal
                             * sensitivityForAicraft.x,
-                            InputManager.joystickInputVector.y * InputManager.throttleInput
+                            m_sideStickVec.y * m_throttleVal
                             * sensitivityForAicraft.y);
 
                     _smoothMouseForAircraft = Vector2.Lerp(_smoothMouseForAircraft,

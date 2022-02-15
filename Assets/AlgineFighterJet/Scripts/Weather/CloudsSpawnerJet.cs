@@ -23,6 +23,7 @@ namespace Algine.Aircraft
         private float m_cloudFastInterval = .2f;
         [SerializeField]
         private float m_cloudSlowInterval = 1f;
+        private float m_throttleVal = 0.0f;
 
         private FighterJetController m_controller;
 
@@ -30,11 +31,16 @@ namespace Algine.Aircraft
         {
             tempCloudPrefab = Instantiate(m_cloudPrefab);
             tempCloudPrefab.SetActive(false);
+            InputManager.OnThrottleMove += OnThrottleMove;
 
             m_controller = GetComponent<FighterJetController>();
 
             StartCoroutine(SpawnCloud());
             GameEvents.Current.onAfterOriginChanged += OnAfterOriginChanged;
+        }
+        private void OnThrottleMove(float val)
+        {
+            m_throttleVal = val;
         }
         private void OnAfterOriginChanged(Vector3 playerPos)
         {
@@ -59,7 +65,7 @@ namespace Algine.Aircraft
                     tempCloudPrefab.transform.position = m_cloudsSpawnPoints.position;
                     tempCloudPrefab.SetActive(true);
 
-                    if (InputManager.throttleInput >= m_cloudFastIntervalThresold)
+                    if (m_throttleVal >= m_cloudFastIntervalThresold)
                     {
                         m_cloudSpawnInterval = m_cloudFastInterval;
                     }
